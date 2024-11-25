@@ -79,3 +79,18 @@ class MyMutiheadAttention(nn.Module):
         # = [src_len, batch_size, embed_dim]
 
         #第二阶段：缩放，attn_mask维度判断
+        tgt_len, bsz, embed_dim = query.size() # [tgt_len, batch_size, embed_dim]
+        src_len = key.size(0)
+        head_dim = embed_dim // num_heads
+        q = q * scaling #[query_len,batch_size,kdim*num_heads]
+
+        if attn_mask is not None:
+        #[tgt_len,src_len] or [num_heads*batch_size,tgt_len,src_len]
+            if attn_mask.dim() == 2:
+                attn_mask = attn_mask.unsqueeze(0)#[1,tgt_len,src_len]扩充维度
+                if list(attn_mask.size()) != [1, query.size(0), key.size(0)]:
+                    raise RuntimeError('The size of the 2D attn_mask is not correct.')
+            elif atten_mask.dim() == 3:
+                if list(attn_mask.size()) != [bsz * num_heads, query.size(0), key.size(0)]:
+                    raise RuntimeError('The size of the 3D attn_mask is not correct.')
+            #attn_mask维度为3D
