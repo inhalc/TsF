@@ -62,8 +62,20 @@ class MyMutiheadAttention(nn.Module):
         out_proj_bias,
         training=True,
         key_padding_mask=None,  #[batch_size, src_len/tgt_len]
-        q_proj_weight=None,     
-        k_proj_weight=None,
-        v_proj_weight=None,
-        attn_mask=None,
+        q_proj_weight=None,     #[embed_dim, qdim * num_heads]
+        k_proj_weight=None,     #[embed_dim, kdim * num_heads]
+        v_proj_weight=None,     #[embed_dim, vdim * num_heads]
+        attn_mask=None,         #[tgt_len, src_len]
         ):
+        #第一阶段：计算Q,K,V
+        q = F.linear(query,q_proj_weight)
+        # [tgt_len, batch_size, embed_dim] * [embed_dim, embed_dim] 
+        # = [tgt_len, batch_size, embed_dim]
+        k = F.linear(key,k_proj_weight)
+        # [src_len, batch_size, embed_dim] * [embed_dim, embed_dim]
+        # = [src_len, batch_size, embed_dim]
+        v = F.linear(value,v_proj_weight)
+        # [src_len, batch_size, embed_dim] * [embed_dim, embed_dim]
+        # = [src_len, batch_size, embed_dim]
+
+        #第二阶段：缩放，attn_mask维度判断
