@@ -94,3 +94,14 @@ class MyMutiheadAttention(nn.Module):
                 if list(attn_mask.size()) != [bsz * num_heads, query.size(0), key.size(0)]:
                     raise RuntimeError('The size of the 3D attn_mask is not correct.')
             #attn_mask维度为3D
+
+        #第三阶段：计算得到注意力权重矩阵
+        q = q.contiguous().view(tgt_len, bsz * num_heads, head_dim).transpose(0, 1)
+        # [batch_size * num_heads, tgt_len, qdim]
+        k = k.contiguous().view(src_len, bsz * num_heads, head_dim).transpose(0, 1)
+        # [batch_size * num_heads, src_len, kdim]
+        v = v.contiguous().view(src_len, bsz * num_heads, head_dim).transpose(0, 1)
+        # [batch_size * num_heads, src_len, vdim]
+        attn_output_weights = torch.bmm(q, k.transpose(1,2))
+        # [batch_size * num_heads, tgt_len, qdim] * [batch_size * num_heads, src_len, kdim]
+        # = [batch_size * num_heads, tgt_len, src_len]  num_heads个QK相乘后的注意力矩阵
