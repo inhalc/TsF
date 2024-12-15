@@ -105,3 +105,15 @@ class MyMutiheadAttention(nn.Module):
         attn_output_weights = torch.bmm(q, k.transpose(1,2))
         # [batch_size * num_heads, tgt_len, qdim] * [batch_size * num_heads, src_len, kdim]
         # = [batch_size * num_heads, tgt_len, src_len]  num_heads个QK相乘后的注意力矩阵
+
+        #第四阶段：mask处理
+        if attn_mask is not None:
+            attn_output_weights += attn_mask
+            #[batch_size*num_heads,tgt_len,scr_len]
+        if key_padding_mask is not None:
+            attn_output_weights = attn_output_weights.view(bsz, num_heads, tgt_len, src_len)
+            # 变成[batch_size, num_heads, src_len]的形状
+            attn_output_weights = attn_output_weights.masked_fill(key_padding_mask.unsqueeze(1).unsqueeze(2),float('-inf'))
+            #扩展维度，从[batch_size, src_len]变成[batch_size,1,1,src_len]
+            attn_output_weights = attn_output_weights.view(bsz * num_heads, tgt_len, src_len)
+            # [batch_size*num_heads,tgt_len,scr_len]
