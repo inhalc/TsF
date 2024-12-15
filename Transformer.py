@@ -117,3 +117,17 @@ class MyMutiheadAttention(nn.Module):
             #扩展维度，从[batch_size, src_len]变成[batch_size,1,1,src_len]
             attn_output_weights = attn_output_weights.view(bsz * num_heads, tgt_len, src_len)
             # [batch_size*num_heads,tgt_len,scr_len]
+
+        attn_output_weight = F.softmax(attn_output_weights,dim=-1)
+        #[batch_size*num_heads,tgt_len,scr_len]
+        attn_output_weight = F.dropout(attn_output_weight,p=dropout_p,training=training)
+        attn_output = torch.bmm(attn_output_weight,v)
+        #Z = [batch_size*num_heads,tgt_len,src_len] @ [batch_size*num_heads,src_len,vdim] = [batch_size*num_heads,tgt_len,vdim]
+        #num_heads个Attention(Q,K,V)结果
+        attn_output = attn_output.transpose(0,1).contiguous().view(tgt_len,bsz,embed_dim)
+        #先transpose成[tgt_len,bath_size*num_heads,vdim],再view成[tgt_len,batch_size,embed_dim]
+
+        Z = F.linear(attn_output,out_proj_weight,out_proj_bias)
+        #这里就是多个 z 线性组合成 Z [tgt_len,batch_size,embed_dim]
+        return Z,attn_output_weight.sum(dim=1)/num_heads
+        #奖num_heads个注意力权重矩阵按对应维度取平均值
